@@ -27,6 +27,12 @@ config_parser.read('config.ini')
 bw_server = config_parser.get('main', 'bw_server')
 bw_username = config_parser.get('main', 'bw_username')
 temp_db = config_parser.get('main', 'temp_db')
+temp_attachments_folder = config_parser.get('main', 'temp_attachments_folder')
+
+delete_temp_database = config_parser.getboolean('after', 'delete_temp_database')
+delete_attachments_folder = config_parser.getboolean('after', 'delete_attachments_folder')
+upload_to_drive = config_parser.getboolean('after', 'upload_to_drive')
+
 
 config = subprocess.check_output(['bw', 'config', 'server', bw_server])
 session = re.search("Saved setting `config`.", str(config))[0]
@@ -100,27 +106,32 @@ for i in bw_items:
     entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
 kp.save()
 
-gauth = GoogleAuth()
-  
-# Creates local webserver and auto
-# handles authentication.
-gauth.LocalWebserverAuth()       
-drive = GoogleDrive(gauth)
-file_list = None
-try:
-    file_list = drive.ListFile({'q': f"title = '{temp_db}' and trashed=false"}).GetList()
-except Exception as e:
-    print("File not found, upload new one")
-if file_list is not None and len(file_list)>0:
-    file1 = drive.CreateFile({'id': file_list[0]['id']})
-else:
-    file1 = drive.CreateFile()
-file1.SetContentFile(temp_db)
-file1.Upload()
+if upload_to_drive:
+    gauth = GoogleAuth()
+    
+    # Creates local webserver and auto
+    # handles authentication.
+    gauth.LocalWebserverAuth()       
+    drive = GoogleDrive(gauth)
+    file_list = None
+    try:
+        file_list = drive.ListFile({'q': f"title = '{temp_db}' and trashed=false"}).GetList()
+    except Exception as e:
+        print("File not found, upload new one")
+    if file_list is not None and len(file_list)>0:
+        file1 = drive.CreateFile({'id': file_list[0]['id']})
+    else:
+        file1 = drive.CreateFile()
+    file1.SetContentFile(temp_db)
+    file1.Upload()
+
+if delete_temp_database:
+    try:
+        os.remove(temp_db)
+    except:
+        print("Could not delete your uncrypted vault file. Please delete this file manually and safely.")
 
 
-try:
-    os.remove(temp_db)
-except:
-    print("Could not delete your uncrypted vault file. Please delete this file manually and safely.")
-
+if delete_attachments_folder:
+    #TODO delete attchments folder
+    pass
