@@ -13,16 +13,27 @@ pip3 install -r requirements.txt
 
 ## Configuration
 Edit the config.ini
+
 ###  main section
 ``bw_server`` your bitwarden server url
+
+
 ``bw_username`` your bitwarden username
+
+
 ``temp_db`` name of the keepass temp db
+
+
 ``temp_attachments_folder`` folder where to download the attachments
 
 ### after section
 
 ``delete_temp_database`` True if you want to delete the keepass temp db at the end
+
+
 ``delete_attachments_folder`` True if you want to delete the temp attchement folder at the end
+
+
 ``upload_to_drive`` True if you want to upload the keepass db into Google Drive
 
 
