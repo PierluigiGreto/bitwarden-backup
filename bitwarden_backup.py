@@ -5,7 +5,7 @@ from pykeepass import PyKeePass, create_database
 import shutil
 from pydrive.drive import GoogleDrive
 from pydrive.auth import GoogleAuth
-import os
+import os, shutil
 
 
 
@@ -27,7 +27,7 @@ config_parser.read('config.ini')
 bw_server = config_parser.get('main', 'bw_server')
 bw_username = config_parser.get('main', 'bw_username')
 temp_db = config_parser.get('main', 'temp_db')
-temp_attachments_folder = config_parser.get('main', 'temp_attachments_folder')
+temp_attachments_folder = os.path.join(config_parser.get('main', 'temp_attachments_folder'), '')
 
 delete_temp_database = config_parser.getboolean('after', 'delete_temp_database')
 delete_attachments_folder = config_parser.getboolean('after', 'delete_attachments_folder')
@@ -48,7 +48,7 @@ except:
     print("You have logged out.")
 
 
-
+os.makedirs(temp_attachments_folder, exist_ok=True) 
 
 
 
@@ -71,11 +71,6 @@ bw_items = json.loads(out)
 out = subprocess.check_output(['bw', 'list', 'folders','--session', session, bw_password])
 bw_folders = json.loads(out)
 
-# Lock the vault
-try:
-    print(subprocess.check_output(['bw', 'lock']))
-except:
-    print("WARNING: Could not lock the vault, session token is still active. Execute '$bw lock' to lock your vault.")
 
 
 kp = create_database(temp_db, password=bw_password)
@@ -104,7 +99,24 @@ for i in bw_items:
     if i['login']['password'] is None:
         i['login']['password'] = ''
     entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
+    attachments = [] 
+    if 'attachments' in i:
+        for att in i['attachments']:
+            out = subprocess.check_output(['bw', 'get', 'attachment', att['id'], '--itemid', i['id'], '--output',temp_attachments_folder , '--session', session, bw_password])
+            with open(f'{temp_attachments_folder}{att["fileName"]}', mode='rb') as file:
+                fileContent = file.read()
+                binary_id = kp.add_binary(fileContent)
+                entry.add_attachment(binary_id, att["fileName"])
 kp.save()
+
+
+# Lock the vault
+try:
+    print(subprocess.check_output(['bw', 'lock']))
+except:
+    print("WARNING: Could not lock the vault, session token is still active. Execute '$bw lock' to lock your vault.")
+
+
 
 if upload_to_drive:
     gauth = GoogleAuth()
@@ -133,5 +145,14 @@ if delete_temp_database:
 
 
 if delete_attachments_folder:
-    #TODO delete attchments folder
-    pass
+    for filename in os.listdir(temp_attachments_folder):
+        file_path = os.path.join(temp_attachments_folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+    shutil.rmtree(temp_attachments_folder)
+    
