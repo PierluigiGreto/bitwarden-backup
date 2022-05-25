@@ -83,30 +83,37 @@ for i in bw_folders:
     folders[i['id']] = i['name']
 print("Items:")
 for i in bw_items:
-    print(i)
     folder_name = 'General'
     if i['folderId'] is not None:
         folder_name = folders[i['folderId']]
     group = kp.find_groups(name=folder_name, first=True)
     if group is None:
         group = kp.add_group(kp.root_group, folder_name)
-    urls = []
-    if 'uris' in i['login']:
-        for u in i['login']['uris']:
-            urls.append(u['uri'])
-    if i['login']['username'] is None:
-        i['login']['username'] = ''
-    if i['login']['password'] is None:
-        i['login']['password'] = ''
-    entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
-    attachments = [] 
-    if 'attachments' in i:
-        for att in i['attachments']:
-            out = subprocess.check_output(['bw', 'get', 'attachment', att['id'], '--itemid', i['id'], '--output',temp_attachments_folder , '--session', session, bw_password])
-            with open(f'{temp_attachments_folder}{att["fileName"]}', mode='rb') as file:
-                fileContent = file.read()
-                binary_id = kp.add_binary(fileContent)
-                entry.add_attachment(binary_id, att["fileName"])
+    
+    if 'login' in i:
+        # print(i)
+
+        urls = []
+        if 'uris' in i['login']:
+            for u in i['login']['uris']:
+                urls.append(u['uri'])
+        if i['login']['username'] is None:
+            i['login']['username'] = ''
+        if i['login']['password'] is None:
+            i['login']['password'] = ''
+        entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
+    
+        attachments = [] 
+        if 'attachments' in i:
+            for att in i['attachments']:
+                out = subprocess.check_output(['bw', 'get', 'attachment', att['id'], '--itemid', i['id'], '--output',temp_attachments_folder , '--session', session, bw_password])
+                with open(f'{temp_attachments_folder}{att["fileName"]}', mode='rb') as file:
+                    fileContent = file.read()
+                    binary_id = kp.add_binary(fileContent)
+                    entry.add_attachment(binary_id, att["fileName"])
+    else:
+        print(f"skipping {i}")
+
 kp.save()
 
 
