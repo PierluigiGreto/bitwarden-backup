@@ -101,6 +101,10 @@ for i in bw_items:
             i['login']['username'] = ''
         if i['login']['password'] is None:
             i['login']['password'] = ''
+
+        for item in i['fields']:
+            i['notes'] += f'\n{item["name"]}: {item["value"]}'
+
         entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
     
         attachments = [] 
@@ -111,6 +115,15 @@ for i in bw_items:
                     fileContent = file.read()
                     binary_id = kp.add_binary(fileContent)
                     entry.add_attachment(binary_id, att["fileName"])
+    elif 'card' in i:
+        notes = ''
+        for key, value in i['card'].items():
+            notes += f'{key}: {value}\n'
+
+        for item in i['fields']:
+            notes += f'{item["name"]}: {item["value"]}\n'
+
+        entry = kp.add_entry(group, i['name'], '', '', notes=notes, url=','.join(urls))
     else:
         print(f"skipping {i}")
 
