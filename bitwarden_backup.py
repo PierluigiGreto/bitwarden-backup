@@ -101,9 +101,9 @@ for i in bw_items:
             i['login']['username'] = ''
         if i['login']['password'] is None:
             i['login']['password'] = ''
-
-        for item in i['fields']:
-            i['notes'] += f'\n{item["name"]}: {item["value"]}'
+        if 'fields' in i:
+            for item in i['fields']:
+                i['notes'] += f'\n{item["name"]}: {item["value"]}'
 
         entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
     
