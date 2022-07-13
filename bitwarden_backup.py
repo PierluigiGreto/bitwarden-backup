@@ -103,6 +103,8 @@ for i in bw_items:
             i['login']['password'] = ''
         if 'fields' in i:
             for item in i['fields']:
+                if i['notes'] is None:
+                    i['notes'] = ''
                 i['notes'] += f'\n{item["name"]}: {item["value"]}'
 
         entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
@@ -125,7 +127,8 @@ for i in bw_items:
 
         entry = kp.add_entry(group, i['name'], '', '', notes=notes, url=','.join(urls))
     else:
-        print(f"skipping {i}")
+        # print(f"skipping {i}")
+        print("skipping")
 
 kp.save()
 
