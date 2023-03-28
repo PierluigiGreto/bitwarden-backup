@@ -1,24 +1,18 @@
 # Set up constants
-from datetime import datetime
 import json
-from pykeepass import PyKeePass, create_database
+import os
+# Get the session id
+import re
 import shutil
-from pydrive.drive import GoogleDrive
-from pydrive.auth import GoogleAuth
-import os, shutil
-
-
-
-
+import subprocess
+from configparser import ConfigParser
+from datetime import datetime
 # Get the passwords
 from getpass import getpass
 
-from configparser import ConfigParser
-
-# Get the session id
-import re
-import subprocess
-
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from pykeepass import PyKeePass, create_database
 
 config_parser = ConfigParser()
 
@@ -71,27 +65,35 @@ bw_items = json.loads(out)
 out = subprocess.check_output(['bw', 'list', 'folders','--session', session, bw_password])
 bw_folders = json.loads(out)
 
-
+out = subprocess.check_output(['bw', 'list', 'organizations','--session', session, bw_password])
+bw_organizations = json.loads(out)
 
 kp = create_database(temp_db, password=bw_password)
-
 
 print("Folders:")
 folders = {}
 for i in bw_folders:
     print(i)
     folders[i['id']] = i['name']
+
+print("Organizations:")
+organizations = {}
+for i in bw_organizations:
+    print(i)
+    organizations[i['id']] = i['name']
+
 print("Items:")
 for i in bw_items:
     folder_name = 'General'
     if i['folderId'] is not None:
         folder_name = folders[i['folderId']]
+    
     group = kp.find_groups(name=folder_name, first=True)
     if group is None:
         group = kp.add_group(kp.root_group, folder_name)
     
     if 'login' in i:
-        # print(i)
+        #print(i)
 
         urls = []
         if 'uris' in i['login']:
@@ -107,7 +109,9 @@ for i in bw_items:
                     i['notes'] = ''
                 i['notes'] += f'\n{item["name"]}: {item["value"]}'
 
-        entry = kp.add_entry(group, i['name'], i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
+        entry_organization = organizations.get(i['organizationId'], None)
+        entry_name = i['name'] if entry_organization is None else f"{i['name']}_{entry_organization}"
+        entry = kp.add_entry(group, entry_name, i['login']['username'], i['login']['password'], notes=i['notes'], url=','.join(urls))
     
         attachments = [] 
         if 'attachments' in i:
